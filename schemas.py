@@ -1,48 +1,93 @@
 """
-Database Schemas
+Database Schemas for Tennis Club App
 
-Define your MongoDB collection schemas here using Pydantic models.
-These schemas are used for data validation in your application.
-
-Each Pydantic model represents a collection in your database.
-Model name is converted to lowercase for the collection name:
-- User -> "user" collection
-- Product -> "product" collection
-- BlogPost -> "blogs" collection
+Each Pydantic model name maps to a MongoDB collection with the lowercase name.
+Example: class User -> collection "user"
 """
+from typing import List, Optional, Literal
+from pydantic import BaseModel, Field, EmailStr
+from datetime import datetime
 
-from pydantic import BaseModel, Field
-from typing import Optional
-
-# Example schemas (replace with your own):
-
+# Core
 class User(BaseModel):
-    """
-    Users collection schema
-    Collection name: "user" (lowercase of class name)
-    """
-    name: str = Field(..., description="Full name")
-    email: str = Field(..., description="Email address")
-    address: str = Field(..., description="Address")
-    age: Optional[int] = Field(None, ge=0, le=120, description="Age in years")
-    is_active: bool = Field(True, description="Whether user is active")
+    email: EmailStr
+    name: str
+    role: Literal["player", "admin"] = "player"
+    rating: Optional[int] = Field(default=1200, ge=200, le=3000, description="Elo-like rating")
+    level: Optional[Literal["beginner", "intermediate", "advanced", "pro"]] = "beginner"
+    bio: Optional[str] = ""
+    avatar_url: Optional[str] = None
+    preferences: dict = Field(default_factory=lambda: {"language": "en", "notifications": True})
 
-class Product(BaseModel):
-    """
-    Products collection schema
-    Collection name: "product" (lowercase of class name)
-    """
-    title: str = Field(..., description="Product title")
-    description: Optional[str] = Field(None, description="Product description")
-    price: float = Field(..., ge=0, description="Price in dollars")
-    category: str = Field(..., description="Product category")
-    in_stock: bool = Field(True, description="Whether product is in stock")
+class Court(BaseModel):
+    name: str
+    surface: Literal["hard", "clay", "grass", "carpet"] = "hard"
+    indoor: bool = False
+    is_active: bool = True
 
-# Add your own schemas here:
-# --------------------------------------------------
+class Booking(BaseModel):
+    user_id: str
+    court_id: str
+    start_time: datetime
+    end_time: datetime
+    status: Literal["confirmed", "cancelled"] = "confirmed"
 
-# Note: The Flames database viewer will automatically:
-# 1. Read these schemas from GET /schema endpoint
-# 2. Use them for document validation when creating/editing
-# 3. Handle all database operations (CRUD) directly
-# 4. You don't need to create any database endpoints!
+class Equipment(BaseModel):
+    name: str
+    category: Literal["racket", "balls", "machine", "other"] = "other"
+    quantity: int = Field(ge=0, default=1)
+    notes: Optional[str] = None
+
+class GearReservation(BaseModel):
+    user_id: str
+    equipment_id: str
+    start_time: datetime
+    end_time: datetime
+    status: Literal["reserved", "returned", "cancelled"] = "reserved"
+
+class Tournament(BaseModel):
+    title: str
+    level: Optional[str] = None
+    start_date: datetime
+    end_date: datetime
+    description: Optional[str] = None
+    participants: List[str] = Field(default_factory=list)
+
+class MatchResult(BaseModel):
+    player1_id: str
+    player2_id: str
+    winner_id: str
+    tournament_id: Optional[str] = None
+    played_at: datetime
+    score: str
+
+class Event(BaseModel):
+    title: str
+    description: Optional[str] = None
+    start_time: datetime
+    end_time: datetime
+    location: Optional[str] = None
+
+class RSVP(BaseModel):
+    user_id: str
+    event_id: str
+    status: Literal["going", "interested", "not_going"] = "going"
+
+class ChatRoom(BaseModel):
+    name: str
+    type: Literal["group", "tournament", "team"] = "group"
+    members: List[str] = Field(default_factory=list)
+    admins: List[str] = Field(default_factory=list)
+
+class Message(BaseModel):
+    room_id: str
+    sender_id: str
+    content: str
+    type: Literal["text", "system"] = "text"
+
+class Notification(BaseModel):
+    user_id: str
+    title: str
+    message: str
+    type: Literal["info", "success", "warning", "error"] = "info"
+    is_read: bool = False
